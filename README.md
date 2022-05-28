@@ -1,0 +1,1 @@
+# browser-clipboard-extension
