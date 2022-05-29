@@ -49,33 +49,28 @@ if(isCopy){
             }
         })
     }
+    
     //存储复制内容
     document.addEventListener('copy', function(){
+        let copyText = document.getSelection().toString();
         console.log("copy happened")
-        copyHappened();
-        
-    });
+        copyHappened(copyText);     
+    },true);
     //存储剪切内容
     document.addEventListener('cut', function(e) {
         let copyText = document.getSelection().toString();
-        let newData = {
+        console.log("copy happened")
+        copyHappened(copyText);
+    });
+
+    function copyHappened(copyText){
+        const newData = {
             id: Date.now(),
             content: copyText,
             tag: "default"
-        }      
-        submitData(newData)
-    });
-
-    async function copyHappened(){
-        navigator.clipboard.readText().then(clipText =>{
-            const newData = {
-                id: Date.now(),
-                content: clipText,
-                tag: "default"
-            };
-            chrome.runtime.sendMessage(["copy happened",newData], function(response) {
-                console.log(response)
-            });           
-        })
+        };
+        chrome.runtime.sendMessage(["copy happened",newData], function(response) {
+            console.log(response)
+        });               
     }
 };
