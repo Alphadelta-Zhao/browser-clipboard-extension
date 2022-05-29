@@ -74,11 +74,10 @@ if(isCopy){
 
 
 async function submitData(newData){
-    let storage = await new Promise((resovle)=>{
-        chrome.storage.local.get(['clipData'], function(result){resovle(result.clipData)})
+    let storage = await new Promise((resovle,reject)=>{
+            chrome?.storage?.local?.get(['clipData'],function(result){resovle(result.clipData)})
     })
-    { }
-    console.log(storage);
+    
     // 为了避免抖动，storage增加一个永远也不会展示的第零项 
     if(storage[storage.length-1].content != newData.content){
         console.log(storage);
