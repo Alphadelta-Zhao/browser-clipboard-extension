@@ -4,7 +4,7 @@
 //页面交互
 let isShowTip = true;
 let isCopy = true;
-
+console.log("页面脚本开始工作");
 
 
 
@@ -50,14 +50,10 @@ if(isCopy){
         })
     }
     //存储复制内容
-    document.addEventListener('copy', function(e) {
-        let copyText = document.getSelection().toString();
-        let newData = {
-            id: Date.now(),
-            content: copyText,
-            tag: "default"
-        }      
-        submitData(newData)
+    document.addEventListener('copy', function(){
+        console.log("copy happened")
+        copyHappened();
+        
     });
     //存储剪切内容
     document.addEventListener('cut', function(e) {
@@ -69,33 +65,17 @@ if(isCopy){
         }      
         submitData(newData)
     });
-};
 
-
-
-async function submitData(newData){
-    let storage = await new Promise((resovle,reject)=>{
-            chrome?.storage?.local?.get(['clipData'],function(result){resovle(result.clipData)})
-    })
-    
-    // 为了避免抖动，storage增加一个永远也不会展示的第零项 
-    if(storage[storage.length-1].content != newData.content){
-        console.log(storage);
-        storage.push(newData);
-        console.log(storage);
-        chrome.storage.local.set({clipData: storage}, function(){}) 
+    async function copyHappened(){
+        navigator.clipboard.readText().then(clipText =>{
+            const newData = {
+                id: Date.now(),
+                content: clipText,
+                tag: "default"
+            };
+            chrome.runtime.sendMessage(["copy happened",newData], function(response) {
+                console.log(response)
+            });           
+        })
     }
-   
-}
-
-
-
-
-
-
-
-
-
-
-
-
+};
