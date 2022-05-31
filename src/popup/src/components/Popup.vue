@@ -37,9 +37,9 @@
             </div>
             <ul>
                 <li v-for="(item,index) of showBoard" :key="item.id">
-                    <span class="index">{{index+1}}</span>
-                    <span class="content" title="item.content">{{item.content}}</span>
-                    <span @click="showTagPage(item)" class="tag">{{item.tag}}</span>
+                    <span class="index" title="点击选中">{{index+1}}</span>
+                    <span class="content" :title="item.content">{{item.content}}</span>
+                    <span @click="showTagPage(item)" class="tag" title="点击修改标签">{{item.tag}}</span>
                     <span class="control">
                         <i title="复制" @click="copyItem(item)" class="iconfont icon-fuzhi"></i>
                         <i title="编辑" @click="editItem(item)" class="iconfont icon-bianji"></i>
@@ -48,6 +48,7 @@
                 </li>
             </ul>            
         </div>
+        <button @click="debug">debug</button>
 
         <tags v-if="tagEditPage" :total="clipTags" :item="itemForTagPage"></tags>
     </div>
@@ -107,6 +108,10 @@ export default{
         },
     },
     methods: {
+        debug(){
+            console.log(this.clipBoard);
+            console.log(this.clipTags)
+        },
         //获取当前日期
         getToday() {
             let t = new Date
@@ -117,8 +122,7 @@ export default{
         },
         //单条修改
         deleteItem(item) {
-            this.clipBoard.splice(this.clipBoard.indexOf(item), 1),
-            this.setClipBoard()
+            this.clipBoard.splice(this.clipBoard.indexOf(item), 1)
         },
         copyItem(item) {
             let e = item.content;
@@ -149,12 +153,20 @@ export default{
                 chrome.storage.local.get(["tags"], (function(e) {t(e.tags)}))
             }))
         },
-        setClipBoard() {chrome.storage.local.set({clipData: this.clipBoard})},
-        setTags() {chrome.storage.local.set({clipData: this.clipTags})},
+        setTags() {chrome.storage.local.set({tags: this.clipTags})},
         setItem(oldItem, newItem) {
             chrome.runtime.sendMessage(["edit item", oldItem, newItem], (response=>{
                 "edit content success" === response && this.getClipBoard()
             }))
+        },
+        deleteTag(tag) {
+            this.clipBoard.forEach(element => {
+              if(element.tag === tag){
+                    element.tag = "default";
+                }  
+            });
+            this.clipTags.splice(this.clipTags.indexOf(tag),1);
+            this.setTags();
         },
 
         // 标签编辑页
@@ -162,12 +174,19 @@ export default{
         showTagPage(item) {
             this.itemForTagPage = item,
             this.tagEditPage = true,
-            this.$bus.$on("tagPageCallback", this.tagPageCallback)
+            this.$bus.$on("tagPageCallback", this.tagPageCallback);
+            this.$bus.$on("addTag",(newTag)=>{
+                this.clipTags.push(newTag);
+                this.setTags();
+            });
+            this.$bus.$on("deleteTag",this.deleteTag)
         },
         tagPageCallback(data) {
             this.tagEditPage = false,
             data.edited && data.oldItem.tag !== data.newItem.tag && this.setItem(data.oldItem, data.newItem),
-            this.$bus.$off("tagPageCallback")
+            this.$bus.$off("tagPageCallback");
+            this.$bus.$off("addTag");
+            this.$bus.$off("deleteTag")
         }
 
     },
@@ -299,12 +318,17 @@ export default{
                         flex: 4;
                         overflow: hidden;
                         white-space: nowrap;
-                        text-overflow: ellipsis
+                        text-overflow: ellipsis;                       
                     }
                     .tag {
                         flex: 1;
                         text-align: center;
                         color: navy;
+                        cursor: pointer;
+                        &:hover {
+                            background-color: #5bc2e7;
+                            color: #eee;
+                        }
                     }
                     .control {
                         flex: 1;

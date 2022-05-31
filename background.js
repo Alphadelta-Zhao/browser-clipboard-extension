@@ -1,13 +1,16 @@
-chrome.runtime.onInstalled.addListener(()=>{
-  const tags = ["default"];
-  const init = [{
-      id: Date.now(),
-      content: "",
-      tag : tags[0]
-  }];
-  chrome.storage.local.set({clipData: init}, function() {});
-  chrome.storage.local.set({tags}, function() {});
-        //ClipItem.tags.splice(1,0,"history","game","study")
+chrome.runtime.onInstalled.addListener((details)=>{ 
+  if (details.reason === "install"){
+    const tags = ["default"];
+    const init = [{
+        id: Date.now(),
+        content: "",
+        tag : tags[0]
+    }];
+    chrome.storage.local.set({clipData: init}, function() {});
+    chrome.storage.local.set({tags}, function() {});
+    return;
+  }
+  console.log("更新完成");
 })
 
 chrome.storage.onChanged.addListener(function (changes, namespace) {
@@ -28,9 +31,7 @@ chrome.runtime.onMessage.addListener(
       if(submitData(request[1]))sendResponse("copy success");
     }
     else if (request[0] === "edit item"){
-      console.log("debug 03 后台页面开始处理");
       editDataItem(request[1],request[2]).then(()=>{
-        console.log("debug 06 后台处理完成，返回报告");
         sendResponse("edit content success");
       });
     }
@@ -52,12 +53,10 @@ async function editDataItem(oldData,newData){
   let storage = await getData();
   let index = storage.findIndex(i=>{if(i.id===oldData.id)return true});
   if(index !=-1){
-    console.log("debug 04 后台页面开始修改存储");
     storage.splice(index,1,newData);
     return await new Promise((resolve,reject)=>{
       chrome.storage.local.set({clipData: storage}, ()=>{
         if (chrome.runtime.lastError)reject(chrome.runtime.lastError);
-        console.log("debug 05 在异步操作中修改了数据的内容");
         resolve(true);
         }
       )
