@@ -3,5 +3,7 @@ module.exports = {
   lintOnSave:false,
   productionSourceMap:false,
   publicPath:'/',
-  outputDir:''
+  outputDir:'../../popup',
+  indexPath:'popup.html',
+  filenameHashing: false,
 }
