@@ -5,49 +5,70 @@ chrome.runtime.onInstalled.addListener(()=>{
       content: "",
       tag : tags[0]
   }];
-  chrome.storage.local.set({clipData: init}, function() {
-      console.log("initialization 50%")
-  });
-  chrome.storage.local.set({tags}, function() {
-      console.log("initialization 100%")
-  });
+  chrome.storage.local.set({clipData: init}, function() {});
+  chrome.storage.local.set({tags}, function() {});
         //ClipItem.tags.splice(1,0,"history","game","study")
 })
 
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-    console.log(
-      `Storage key "${key}" in namespace "${namespace}" changed.`,
-      `Old value was "${oldValue}", new value is "${newValue}".`
-    );
+    console.log("下面是存储的改变");
     console.log(oldValue);
     console.log(newValue);
+    console.log("上面是存储的改变")
   }
 });
 
 chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse) {
+  (request, sender, sendResponse)=> {
     console.log(sender.tab ?
                 "from a content script:" + sender.tab.url :
                 "from the extension");
     if (request[0] === "copy happened"){
-      if(submitData(request[1]))sendResponse("success");
+      if(submitData(request[1]))sendResponse("copy success");
     }
+    else if (request[0] === "edit item"){
+      console.log("debug 03 后台页面开始处理");
+      editDataItem(request[1],request[2]).then(()=>{
+        console.log("debug 06 后台处理完成，返回报告");
+        sendResponse("edit content success");
+      });
+    }
+    return true;
   } 
 );
 
 async function submitData(newData){
-  let storage = await new Promise((resovle,reject)=>{
-          chrome.storage.local.get(['clipData'],function(result){resovle(result.clipData)})
-  })  
+  let storage = await getData();
   // 为了避免抖动，storage增加一个永远也不会展示的第零项 
   if(storage[storage.length-1].content != newData.content){
-    console.log("增加复制内容过程")
-    console.log(storage);
     storage.push(newData);
-    console.log(storage);
     chrome.storage.local.set({clipData: storage}, function(){}) 
     return true;
   }
- 
 }
+
+async function editDataItem(oldData,newData){ 
+  let storage = await getData();
+  let index = storage.findIndex(i=>{if(i.id===oldData.id)return true});
+  if(index !=-1){
+    console.log("debug 04 后台页面开始修改存储");
+    storage.splice(index,1,newData);
+    return await new Promise((resolve,reject)=>{
+      chrome.storage.local.set({clipData: storage}, ()=>{
+        if (chrome.runtime.lastError)reject(chrome.runtime.lastError);
+        console.log("debug 05 在异步操作中修改了数据的内容");
+        resolve(true);
+        }
+      )
+    })
+  }
+  else return false;
+}
+
+function getData(){
+  return new Promise((resovle,reject)=>{
+    chrome.storage.local.get(['clipData'],function(result){resovle(result.clipData)})
+  });
+} 
+
