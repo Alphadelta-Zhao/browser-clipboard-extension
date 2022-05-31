@@ -39,20 +39,25 @@
                 <li v-for="(item,index) of showBoard" :key="item.id">
                     <span class="index">{{index+1}}</span>
                     <span class="content" title="item.content">{{item.content}}</span>
-                    <span class="tag">{{item.tag}}</span>
+                    <span @click="showTagPage(item)" class="tag">{{item.tag}}</span>
                     <span class="control">
-                        <i title="复制" class="iconfont icon-fuzhi"></i>
-                        <i title="编辑" class="iconfont icon-bianji"></i>
-                        <i title="删除" class="iconfont icon-shanchu1"></i>
+                        <i title="复制" @click="copyItem(item)" class="iconfont icon-fuzhi"></i>
+                        <i title="编辑" @click="editItem(item)" class="iconfont icon-bianji"></i>
+                        <i title="删除" @click="deleteItem(item)" class="iconfont icon-shanchu1"></i>
                     </span>
                 </li>
             </ul>            
         </div>
+
+        <tags v-if="tagEditPage" :total="clipTags" :item="itemForTagPage"></tags>
     </div>
 </template>
 
 <script>
+import Tags from './Tags.vue';
+
 export default{
+  components: { Tags },
     name: "IndexHead",
     data(){
         return {
