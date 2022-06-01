@@ -37,8 +37,8 @@
             </div>
             <ul>
                 <li v-for="(item,index) of showBoard" :key="item.id">
-                    <span class="index" title="点击选中">{{index+1}}</span>
-                    <span class="content" :title="item.content">{{item.content}}</span>
+                    <span :ref = "item.id" @click="selectItem(item.id)" class="index" title="点击选中">{{index+1}}</span>
+                    <span @click="selectItem(item.id)" class="content" :title="item.content">{{item.content}}</span>
                     <span @click="showTagPage(item)" class="tag" title="点击修改标签">{{item.tag}}</span>
                     <span class="control">
                         <i title="复制" @click="copyItem(item)" class="iconfont icon-fuzhi"></i>
@@ -48,7 +48,19 @@
                 </li>
             </ul>            
         </div>
-        <button @click="debug">debug</button>
+        <button v-if="debut_mode" @click="debug">debug</button>
+        <div id="select">
+            <button v-if="debug_mode" @click="debug">debug</button>
+            <span id="func">
+                <div>批量操作</div>
+                <i title="批量复制" @click="copyAll" class="iconfont icon-fuzhi"></i>
+                <i title="批量标签" @click="changeTagAll" class="iconfont icon-biaoqian1"></i>
+                <i title="批量删除" @click="deleteAll" class="iconfont icon-shanchu1"></i>
+            </span>
+            <span class="btn" @click="selectAll">全选</span>
+            <span class="btn" @click="removeAll">解除</span>
+        </div>
+        
 
         <tags v-if="tagEditPage" :total="clipTags" :item="itemForTagPage"></tags>
     </div>
@@ -76,7 +88,16 @@ export default{
             selectTag: "",
             //标签编辑页相关
             tagEditPage: false,
-            itemForTagPage: null
+            tagPageMode: "piece",
+            itemForTagPage: {
+                id: 0,
+                tag: "-",
+                content: ""
+            },
+            //选择相关
+            selectIds:[],
+            //debug
+            debut_mode: true
         }
     },
     computed:{
@@ -85,15 +106,15 @@ export default{
             if ("" == this.clipBoard)
                 return [{
                     id: 1,
-                    content: "asafdafs",
+                    content: "4",
                     tag: "default"
                 }, {
                     id: 2,
-                    content: "asafdafs",
+                    content: "a5",
                     tag: "default"
                 }, {
                     id: 3,
-                    content: "asafdafs",
+                    content: "a6",
                     tag: "default"
                 }];
             //确定显示内容
@@ -104,13 +125,17 @@ export default{
                 t = t.filter((t=>t.id >= e && t.id < a))
             }
             this.isIndexTag && this.selectTag && (t = t.filter((t=>t.tag == this.selectTag)));
+            //排除的解除选中
+            let arr = t.map((item)=>{return item.id});
+            this.showBoardRemoveSelect(arr);
             return t.reverse()
         },
     },
     methods: {
         debug(){
-            console.log(this.clipBoard);
-            console.log(this.clipTags)
+            // console.log(this.clipBoard);
+            // console.log(this.clipTags);
+            console.log(this.selectIds);
         },
         //获取当前日期
         getToday() {
@@ -122,7 +147,8 @@ export default{
         },
         //单条修改
         deleteItem(item) {
-            this.clipBoard.splice(this.clipBoard.indexOf(item), 1)
+            this.clipBoard.splice(this.clipBoard.indexOf(item), 1);
+            this.setClipBoard();
         },
         copyItem(item) {
             let e = item.content;
@@ -154,17 +180,21 @@ export default{
             }))
         },
         setTags() {chrome.storage.local.set({tags: this.clipTags})},
+        setClipBoard() {chrome.storage.local.set({clipData: this.clipBoard})},
         setItem(oldItem, newItem) {
-            chrome.runtime.sendMessage(["edit item", oldItem, newItem], (response=>{
-                "edit content success" === response && this.getClipBoard()
-            }))
+            return new Promise ((resolve)=>{
+                chrome.runtime.sendMessage(["edit item", oldItem, newItem], (response=>{
+                    if("edit content success" === response){
+                        this.getClipBoard();
+                        resolve(true);
+                    } 
+                }))
+            })
         },
         deleteTag(tag) {
-            this.clipBoard.forEach(element => {
-              if(element.tag === tag){
-                    element.tag = "default";
-                }  
-            });
+            chrome.runtime.sendMessage(["delete tag", tag], (response=>{
+                "delete tag success" === response && this.getClipBoard()
+            }))
             this.clipTags.splice(this.clipTags.indexOf(tag),1);
             this.setTags();
         },
@@ -172,22 +202,116 @@ export default{
         // 标签编辑页
 
         showTagPage(item) {
-            this.itemForTagPage = item,
-            this.tagEditPage = true,
+            if(this.tagPageMode == "piece"){
+                this.itemForTagPage = item;
+            }
+            if(this.tagPageMode == "all"){
+                this.itemForTagPage.tag = "-";
+            }
+            this.tagEditPage = true;
             this.$bus.$on("tagPageCallback", this.tagPageCallback);
             this.$bus.$on("addTag",(newTag)=>{
                 this.clipTags.push(newTag);
                 this.setTags();
             });
             this.$bus.$on("deleteTag",this.deleteTag)
+            
         },
         tagPageCallback(data) {
-            this.tagEditPage = false,
-            data.edited && data.oldItem.tag !== data.newItem.tag && this.setItem(data.oldItem, data.newItem),
+            this.tagEditPage = false;
+            if(this.tagPageMode == "piece"){
+                data.edited && data.oldItem.tag !== data.newItem.tag && this.setItem(data.oldItem, data.newItem);
+            }
+            if(this.tagPageMode == "all"){
+                if(data.edited){
+                    chrome.runtime.sendMessage(["many change tag",this.selectIds,data.newItem.tag],
+                        (response)=>response=="a"&&this.getClipBoard());
+                }
+                this.tagPageMode = "piece";
+            }          
             this.$bus.$off("tagPageCallback");
             this.$bus.$off("addTag");
             this.$bus.$off("deleteTag")
+        },
+
+        //选择相关 -- 基础
+        selectCheck(id){
+            let index = this.selectIds.indexOf(id);
+            if(index == -1)return false;
+            else return true;
+        },
+        selectAdd(id){
+            this.selectIds.push(id);
+        },
+        selectRemove(id){
+            this.selectIds.splice(this.selectIds.indexOf(id),1)
+        },
+        selectChange(id){
+            if(this.selectCheck(id))this.selectRemove(id);
+            else this.selectAdd(id);
+        },
+        selectItem(id){
+            this.$refs[id][0].classList.toggle("selected");
+            this.selectChange(id)
+        },
+        //选择先关 --进一步       
+        showBoardRemoveSelect(arr){
+            let temp = this.selectIds.map((id)=>{
+                if(arr.indexOf(id)===-1)return id;
+                return -1;
+            });
+            for (let id of temp){
+                if(id!=-1)this.selectRemove(id);
+            }
+        },
+        selectAll(){
+            let arr = this.showBoard.map((item)=>item.id);
+            arr.forEach((id)=>{
+                if(!this.selectCheck(id)){
+                    this.selectAdd(id);
+                    this.$refs[id][0].classList.toggle("selected");
+                }
+            })
+        },
+        removeAll(){
+            const arr = this.selectIds.map(id=>id);
+            arr.forEach(id=>{this.selectRemove(id);this.$refs[id][0].classList.toggle("selected");});
+            this.selectIds = [];
+        },
+        copyAll(){
+            let text = "";
+            let index = -1;
+            this.selectIds.forEach(id => {
+                index = this.showBoard.findIndex((item)=>{
+                    if(item.id===id)return true;               
+                })
+                text += this.showBoard[index].content;
+            })
+            navigator.clipboard.writeText(text);
+        },
+        deleteAll(){
+            if(!confirm("请确认将删除所有选定的记录"))return;
+            let temp = this.clipBoard.map(item => {
+                let mid = {...item};
+                let index = this.selectIds.indexOf(item.id);
+                if(index!=-1){
+                    return 0;
+                }
+                return mid;    
+            });
+            let temp2 = [temp[0]];
+            for (let i=1;i<temp.length;i++){
+                if(temp[i]!=0)temp2.push(temp[i]);
+            };
+            console.log(temp2);
+            chrome.runtime.sendMessage(["change storage",temp2],
+                (response)=>response=="a"&&this.getClipBoard()); 
+        },
+        changeTagAll(){
+            this.tagPageMode = "all";
+            this.showTagPage();
         }
+
 
     },
     created() {
@@ -291,7 +415,7 @@ export default{
             margin: 0px auto;
             ul {
                 width: 100%;
-                height: 500px;
+                height: 450px;
                 list-style: none;
                 overflow-y: auto;
                 li {
@@ -300,20 +424,21 @@ export default{
                     line-height: 20px;
                     display: flex;
                     align-items: center;
-                    justify-content: stretch;
+                    justify-content: stretch;                    
                     .index {
+                        cursor: pointer;
                         text-align: center;
                         line-height: 14px;
                         flex: 0 0 18px;
                         border: 2px solid navy;
                         border-radius: 50%;
                         margin: 0 3px;
-                        font-size: 12px;
-                        &[selected] {
-                            background-color: navy;
-                            color: #faebd7
-                        }
+                        font-size: 12px;    
                     }
+                    .selected {
+                        background-color: navy !important;
+                        color: #faebd7 !important
+                        }
                     .content {
                         flex: 4;
                         overflow: hidden;
@@ -349,6 +474,59 @@ export default{
                     }
                 }
             }
+        }
+        #select {
+            height: 30px;
+            width: 396px;
+            margin: 0px auto;;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            background: #5bc2e7;
+            
+            #func {
+                width: 150px;
+                display: flex;
+                justify-content: space-around;
+                align-items: baseline;
+                font-weight: 500;
+                color: #faeddc;
+                font-size: 16px;
+                i {
+                    zoom: 1.1;
+                    font-weight: 700;
+                    
+                    }
+                }
+            i {
+                cursor: pointer;
+                &:hover {
+                    color: pink;
+                }
+                &:active {
+                    zoom: 0.9;
+                    color: hotpink;
+                }
+            }
+            .btn {
+                background-color: #faeddc;
+                border: 2px solid navy;
+                width: 60px;
+                padding: 0 5px;
+                margin: 0px 5px;
+                border-radius: 30px;
+                color: navy;
+                font-size: 16px;
+                text-align: center;
+                &:hover {
+                    background-color: hotpink;
+                    color: #eee;
+                }
+                &:click{
+                    transform: translateY(3px);
+                }
+            }
+            
         }
     }
 </style>

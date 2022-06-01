@@ -30,11 +30,7 @@ export default {
             default: ["default"]
         },
         item: {
-            default: {
-                id: 0,
-                tag: "default",
-                content: ""
-            }
+            
         }
     },
     data() {
@@ -163,6 +159,7 @@ i {
                 padding: 5px;
                 text-align: center;
                 margin: 2px;
+                cursor: pointer;
                 &:hover {
                     background-color: hotpink;
                     color: #ddd;
@@ -196,6 +193,7 @@ i {
                 border-radius: 40px;
                 color: navy;
                 font-size: 20px;
+                text-align: center;
                 &:hover {
                     background-color: hotpink;
                     color: #eee;

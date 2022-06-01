@@ -35,7 +35,17 @@ chrome.runtime.onMessage.addListener(
         sendResponse("edit content success");
       });
     }
+    else if (request[0] === "delete tag"){
+      deleteTag(request[1]).then(()=>sendResponse("delete tag success"));
+    }
+    else if (request[0] === "many change tag"){
+      manyChangeTag(request[1],request[2]).then(()=>sendResponse("a"));
+    }
+    else if (request[0] === "change storage"){
+      changeStorage(request[1]).then(()=>{sendResponse("a")});
+    }
     return true;
+    
   } 
 );
 
@@ -54,15 +64,36 @@ async function editDataItem(oldData,newData){
   let index = storage.findIndex(i=>{if(i.id===oldData.id)return true});
   if(index !=-1){
     storage.splice(index,1,newData);
-    return await new Promise((resolve,reject)=>{
-      chrome.storage.local.set({clipData: storage}, ()=>{
-        if (chrome.runtime.lastError)reject(chrome.runtime.lastError);
-        resolve(true);
-        }
-      )
-    })
+    return await setData(storage);  
   }
   else return false;
+}
+async function deleteTag(tag){
+  let storage =await getData();
+  storage = storage.map(element => {
+    let temp = {...element};
+    if(element.tag === tag){
+      temp.tag = 'default';
+      return temp;
+    }
+    return temp;  
+  });
+  return await setData(storage);  
+}
+async function manyChangeTag(ids,tag){
+  let storage = await getData();
+  storage = storage.map((element) =>{
+    let temp = {...element};
+    if(ids.indexOf(element.id)!==-1){
+      temp.tag = tag;
+      return temp;
+    }
+    return temp;
+  });
+  return await setData(storage);
+}
+async function changeStorage(storage){
+  return await setData(storage);
 }
 
 function getData(){
@@ -70,4 +101,13 @@ function getData(){
     chrome.storage.local.get(['clipData'],function(result){resovle(result.clipData)})
   });
 } 
+function setData(storage){
+  return new Promise((resolve,reject)=>{
+    chrome.storage.local.set({clipData: storage}, ()=>{
+      if (chrome.runtime.lastError)reject(chrome.runtime.lastError);
+      resolve(true);
+      }
+    )
+  })
+}
 
