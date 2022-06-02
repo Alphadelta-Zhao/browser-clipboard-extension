@@ -47,9 +47,12 @@ export default {
         //     
         // }, 被迫取消，使用会产生 Cannot read property '_wrapper' of undefined in Vue.JS 的奇怪bug
         addTag() {
-            const newTag = prompt("请输入新的标签名称");
+            let newTag = prompt("请输入新的标签名称");
+            if(newTag===null)return;
+            newTag=newTag.trim();
             if (this.total.indexOf(newTag)!==-1){alert("标签存在重名，请重新添加");return}
             else if (newTag==""){alert("标签不能为空，请重新输入");return}
+            else if (newTag.length>10){alert("标签长度过长，请重新输入")}
             this.$bus.$emit("addTag",newTag);
         },
         deleteTag(){
@@ -66,7 +69,7 @@ export default {
             if(this.state==="dele-mode"){
                 if(tag === "default"){alert("抱歉，不能删除默认标签");return}
                 const check = confirm(`请确定是否要删除标签：${tag} 使用该标签的所有记录会被修改为默认标签`);
-                if(!check)return;
+                if(check !== true)return;
                 this.state = "normal";
                 this.$bus.$emit("deleteTag",tag)
             }

@@ -6,8 +6,7 @@ chrome.runtime.onInstalled.addListener((details)=>{
         content: "",
         tag : tags[0]
     }];
-    chrome.storage.local.set({clipData: init}, function() {});
-    chrome.storage.local.set({tags}, function() {});
+    chrome.storage.local.set({clipData: init,tags,toggle: true,tip: true});
     return;
   }
   console.log("更新完成");
@@ -43,6 +42,9 @@ chrome.runtime.onMessage.addListener(
     }
     else if (request[0] === "change storage"){
       changeStorage(request[1]).then(()=>{sendResponse("a")});
+    }
+    else if (request[0] === "copy set tag"){
+      copySetTag(request[1]);
     }
     return true;
     
@@ -95,6 +97,12 @@ async function manyChangeTag(ids,tag){
 async function changeStorage(storage){
   return await setData(storage);
 }
+async function copySetTag(tag){
+  let storage = await getData();
+  storage[storage.length-1].tag = tag;
+  if(tag=="default")return;
+  setData(storage);
+}
 
 function getData(){
   return new Promise((resovle,reject)=>{
@@ -110,4 +118,22 @@ function setData(storage){
     )
   })
 }
+
+// const copy = "";
+// const lastCopy = "";
+
+// async function watchClipBoard(){
+//   copy.innerText = await navigator.clipboard.readText();
+//   if(copy!=lastCopy){
+//     console.log(copy);
+//     lastCopy = copy;
+//     storage = await getData();
+//     storage.push({id : Date.now(),content : copy,tag: "default"})
+//     setData(storage);
+//   }
+// };
+// const timer = setInterval(watchClipBoard,1000);
+
+
+
 

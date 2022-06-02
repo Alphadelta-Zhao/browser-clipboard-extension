@@ -61,13 +61,35 @@
             <span class="btn" @click="removeAll">解除</span>
         </div>
         
-
+        <!-- <div id="test" style="width:300px;height:300px;background-color: bisque;">dfdfdf</div> -->
         <tags v-if="tagEditPage" :total="clipTags" :item="itemForTagPage"></tags>
     </div>
 </template>
 
 <script>
 import Tags from './Tags.vue';
+
+
+// async function watchClipBoard(){
+// //   test.innerText = await navigator.clipboard.readText();
+//     // console.log(copy);
+//     // lastCopy = copy;
+//     // storage = await getData();
+//     // storage.push({id : Date.now(),content : copy,tag: "default"})
+//     // setData(storage);
+//     let test = document.querySelector("#test");
+//     console.log(test);
+//     var range = document.createRange();
+//     var selection = window.getSelection();
+//     range.selectNodeContents(test);  
+//     selection.removeAllRanges();
+//     selection.addRange(range);
+//     test.focus();
+//     console.log(document.execCommand('paste'));
+//     document.execCommand('paste');
+// }
+// const timer = setInterval(watchClipBoard,1000);
+
 
 export default{
   components: { Tags },
@@ -157,6 +179,7 @@ export default{
         editItem(item) {
             const oldContent = item.content
               , newContent = prompt("", `${oldContent}`);
+            if(newContent===null)return;
             if (newContent !== oldContent) {
                 let newItem = {
                     id: item.id,
@@ -290,7 +313,8 @@ export default{
             navigator.clipboard.writeText(text);
         },
         deleteAll(){
-            if(!confirm("请确认将删除所有选定的记录"))return;
+            let check = confirm("请确认将删除所有选定的记录");
+            if(check !== true)return;
             let temp = this.clipBoard.map(item => {
                 let mid = {...item};
                 let index = this.selectIds.indexOf(item.id);
@@ -339,9 +363,14 @@ export default{
     }
     #popup {
         width: 400px;
+        height: 500px;
         border: 1px solid #000;
         position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: stretch;
         #head {
+            flex:0;
             margin: 0 auto;
             width: 396px;
             display: flex;
@@ -411,13 +440,13 @@ export default{
             }
         }
         #container {
+            flex:5;
             width: 396px;
             margin: 0px auto;
+            overflow-y: auto;
             ul {
                 width: 100%;
-                height: 450px;
                 list-style: none;
-                overflow-y: auto;
                 li {
                     margin: 0 2px;
                     height: 20px;
@@ -448,6 +477,9 @@ export default{
                     .tag {
                         flex: 1;
                         text-align: center;
+                        overflow: hidden;
+                        white-space: nowrap;
+                        text-overflow: ellipsis;
                         color: navy;
                         cursor: pointer;
                         &:hover {
@@ -476,14 +508,14 @@ export default{
             }
         }
         #select {
-            height: 30px;
-            width: 396px;
-            margin: 0px auto;;
+            flex: 0 0 30px;
+            width: 100%;
             display: flex;
             justify-content: flex-end;
             align-items: center;
             background: #5bc2e7;
-            
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px; 
             #func {
                 width: 150px;
                 display: flex;
