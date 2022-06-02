@@ -48,9 +48,7 @@
                 </li>
             </ul>            
         </div>
-        <button v-if="debut_mode" @click="debug">debug</button>
         <div id="select">
-            <button v-if="debug_mode" @click="debug">debug</button>
             <span id="func">
                 <div>批量操作</div>
                 <i title="批量复制" @click="copyAll" class="iconfont icon-fuzhi"></i>
@@ -60,37 +58,13 @@
             <span class="btn" @click="selectAll">全选</span>
             <span class="btn" @click="removeAll">解除</span>
         </div>
-        
-        <!-- <div id="test" style="width:300px;height:300px;background-color: bisque;">dfdfdf</div> -->
+        <button v-if="debug_mode" @click="debug">debug</button>
         <tags v-if="tagEditPage" :total="clipTags" :item="itemForTagPage"></tags>
     </div>
 </template>
 
 <script>
 import Tags from './Tags.vue';
-
-
-// async function watchClipBoard(){
-// //   test.innerText = await navigator.clipboard.readText();
-//     // console.log(copy);
-//     // lastCopy = copy;
-//     // storage = await getData();
-//     // storage.push({id : Date.now(),content : copy,tag: "default"})
-//     // setData(storage);
-//     let test = document.querySelector("#test");
-//     console.log(test);
-//     var range = document.createRange();
-//     var selection = window.getSelection();
-//     range.selectNodeContents(test);  
-//     selection.removeAllRanges();
-//     selection.addRange(range);
-//     test.focus();
-//     console.log(document.execCommand('paste'));
-//     document.execCommand('paste');
-// }
-// const timer = setInterval(watchClipBoard,1000);
-
-
 export default{
   components: { Tags },
     name: "IndexHead",
@@ -119,28 +93,24 @@ export default{
             //选择相关
             selectIds:[],
             //debug
-            debut_mode: true
+            debug_mode: false,
         }
     },
     computed:{
         showBoard() {
             //测试的时候用 正式版本删除
-            if ("" == this.clipBoard)
-                return [{
-                    id: 1,
-                    content: "4",
-                    tag: "default"
-                }, {
-                    id: 2,
-                    content: "a5",
-                    tag: "default"
-                }, {
-                    id: 3,
-                    content: "a6",
-                    tag: "default"
-                }];
+            /*
+            if ("" == this.clipBoard)return [{id: 1,content: "4",tag: "default"}, {id: 2,content: "a5",tag: "default"}, {id: 3,content: "a6",tag: "default"}];
+            */
             //确定显示内容
-            let t = this.clipBoard.slice(1, this.clipBoard.length).filter((t=>-1 !== t.content.indexOf(this.keyValue)));
+            if ("" == this.clipBoard)return;
+            let t = [];
+            try{
+                t = this.clipBoard.slice(1, this.clipBoard.length).filter((t=>-1 !== t.content.indexOf(this.keyValue)));
+            }catch(err){
+                console.error(err);
+                return;
+            }
             if (this.isIndexDate) {
                 let e = Date.parse(this.dateStart) + 60 * (new Date).getTimezoneOffset() * 1e3
                   , a = Date.parse(this.dateEnd) + 60 * (new Date).getTimezoneOffset() * 1e3 + 864e5;
@@ -155,8 +125,8 @@ export default{
     },
     methods: {
         debug(){
-            // console.log(this.clipBoard);
-            // console.log(this.clipTags);
+            console.log(this.clipBoard);
+            console.log(this.clipTags);
             console.log(this.selectIds);
         },
         //获取当前日期
@@ -229,7 +199,7 @@ export default{
                 this.itemForTagPage = item;
             }
             if(this.tagPageMode == "all"){
-                this.itemForTagPage.tag = "-";
+                this.itemForTagPage.tag = "";
             }
             this.tagEditPage = true;
             this.$bus.$on("tagPageCallback", this.tagPageCallback);
@@ -247,8 +217,10 @@ export default{
             }
             if(this.tagPageMode == "all"){
                 if(data.edited){
-                    chrome.runtime.sendMessage(["many change tag",this.selectIds,data.newItem.tag],
+                    if(data.newItem.tag != ""){
+                        chrome.runtime.sendMessage(["many change tag",this.selectIds,data.newItem.tag],
                         (response)=>response=="a"&&this.getClipBoard());
+                    }    
                 }
                 this.tagPageMode = "piece";
             }          
@@ -276,8 +248,7 @@ export default{
         selectItem(id){
             this.$refs[id][0].classList.toggle("selected");
             this.selectChange(id)
-        },
-        //选择先关 --进一步       
+        },            
         showBoardRemoveSelect(arr){
             let temp = this.selectIds.map((id)=>{
                 if(arr.indexOf(id)===-1)return id;
@@ -287,6 +258,7 @@ export default{
                 if(id!=-1)this.selectRemove(id);
             }
         },
+        //选择相关 --进一步 
         selectAll(){
             let arr = this.showBoard.map((item)=>item.id);
             arr.forEach((id)=>{
@@ -309,6 +281,7 @@ export default{
                     if(item.id===id)return true;               
                 })
                 text += this.showBoard[index].content;
+                text +="\n";
             })
             navigator.clipboard.writeText(text);
         },
@@ -327,7 +300,6 @@ export default{
             for (let i=1;i<temp.length;i++){
                 if(temp[i]!=0)temp2.push(temp[i]);
             };
-            console.log(temp2);
             chrome.runtime.sendMessage(["change storage",temp2],
                 (response)=>response=="a"&&this.getClipBoard()); 
         },
@@ -562,3 +534,20 @@ export default{
         }
     }
 </style>
+
+
+let time = document.querySelectorAll("div.duration");
+time = Array.from(time);
+let all2 = time.reduce((pre,ele,index)=>{
+    if(index==199){return pre+91};
+    return pre+Number(ele.innerText.slice(0,2))
+    },0)
+function test(n){     
+    let a = time.reduce((pre,ele,index)=>{
+        if(index>=n){return pre};
+        return pre+Number(ele.innerText.slice(0,2));
+        },0)
+    console.log(a);
+    console.log(a/all2);
+    }
+

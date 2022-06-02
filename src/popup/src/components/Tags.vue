@@ -27,18 +27,16 @@ export default {
     name: "Tag",
     props: {
         total: {
-            default: ["default"]
+            default: ["默认"]
         },
-        item: {
-            
-        }
+        item: {}
     },
     data() {
         return {
             current: {
                 ...this.item
             },
-            tagToBe: "_",
+            tagToBe: "",
             state: "normal"
         }
     },
@@ -52,7 +50,7 @@ export default {
             newTag=newTag.trim();
             if (this.total.indexOf(newTag)!==-1){alert("标签存在重名，请重新添加");return}
             else if (newTag==""){alert("标签不能为空，请重新输入");return}
-            else if (newTag.length>10){alert("标签长度过长，请重新输入")}
+            else if (newTag.length>15){alert("标签长度过长，请重新输入")}
             this.$bus.$emit("addTag",newTag);
         },
         deleteTag(){
@@ -67,7 +65,7 @@ export default {
                 this.tagToBe = tag;
             }
             if(this.state==="dele-mode"){
-                if(tag === "default"){alert("抱歉，不能删除默认标签");return}
+                if(tag ==="默认"){alert("抱歉，不能删除默认标签");return}
                 const check = confirm(`请确定是否要删除标签：${tag} 使用该标签的所有记录会被修改为默认标签`);
                 if(check !== true)return;
                 this.state = "normal";
@@ -133,7 +131,7 @@ i {
         }
         #changeShow {
             flex: 0 0 20px;
-            width: 100px;
+            width: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -142,6 +140,10 @@ i {
             }
             span {
                 margin: 0px 5px;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                max-width: 100px;
             }
         }
         #tagsShow {
@@ -159,9 +161,13 @@ i {
                 border: 1px solid navy;
                 border-radius: 14px;
                 min-width: 30px;
+                max-width: 100px;
                 padding: 5px;
                 text-align: center;
                 margin: 2px;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
                 cursor: pointer;
                 &:hover {
                     background-color: hotpink;

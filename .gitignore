@@ -3,6 +3,7 @@ node_modules
 old popup
 mayneed
 test
+dist
 
 
 # local env files

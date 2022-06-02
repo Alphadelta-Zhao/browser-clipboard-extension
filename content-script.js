@@ -3,10 +3,9 @@
 */
 //
 
-console.log("页面脚本开始工作");
 toggle();
 tip();
-let pos = {x:0,y:0,poped:false,popx:0,popy:0};
+let pos = {x:0,y:0,poped:false,popx:0,popy:0,lastCopy:""};
 chrome.runtime.onMessage.addListener("toggle", ()=>toggle());
 chrome.runtime.onMessage.addListener("tip", ()=>toggle());
 
@@ -36,15 +35,13 @@ async function tip(){
 }
 
 function copy(e){
-    let copyText = document.getSelection().toString();
+    pos.lastCopy = document.getSelection().toString();
     const newData = {
         id: Date.now(),
-        content: copyText,
-        tag: "default",
+        content: pos.lastCopy,
+        tag: "默认",
     };
-    chrome.runtime.sendMessage(["copy happened",newData], function(response) {
-        console.log(response)
-    });               
+    chrome.runtime.sendMessage(["copy happened",newData]);               
 }
 
 function setPos(e){
@@ -58,7 +55,7 @@ async function tipShow(e){
     //
     let tip = document.createElement("div");
     tip.style.cssText = `
-        background-color: rgba(22,184,243,0.4);
+        background-color: rgba(22,184,243,0.7);
         padding:5px;
         border-radius:4px;
         border:1px solid navy;
@@ -73,7 +70,7 @@ async function tipShow(e){
         justify-content:flex-start;
         align-items:flex-start;
         align-content:flex-start;
-        z-index:99;
+        z-index:2147483647;
     `;
     tip.setAttribute("data-extenstion-copytip","copytip");
     //
@@ -83,7 +80,9 @@ async function tipShow(e){
     title.style.cssText = `
         width:100%;
         height:20px;
-        color:hotpink;
+        font-weight: 700;
+        color:#eee;
+        text-shadow:1px -1px 2px black;
         text-align:center;
     `
     tip.append(title);
@@ -117,21 +116,14 @@ async function tipShow(e){
     pos.poped = true;
     pos.popx = pos.x;
     pos.popy = pos.y;
-    console.log("tianjiale",tip)
-
 }
 function tipClose(e,done=false){
     if(pos.poped){
-        console.log(done);
         let tip = document.querySelector('div[data-extenstion-copytip="copytip"]');
         if(!done){
-            console.log(e.pageX);
-            console.log(pos.popx);
-
             if(e.pageX>pos.popx-5&&e.pageX<pos.popx+155&&e.pageY>pos.popy-5&&e.pageY<pos.popy+155)return;
         }
         let arr = document.querySelectorAll('span[data-extension-copytip-box="copytip"]');
-        console.log(arr);
         arr.forEach(element => {
             element.removeEventListener("click",tagClick);
         });       
@@ -140,13 +132,11 @@ function tipClose(e,done=false){
     }
 }
 function tagClick(e){
-    console.log(e);
-    console.log(e.target.innerText);
     tipClose(e,true);
     setTag(e.target.innerText);
 }
 function setTag(tag){
-    chrome.runtime.sendMessage(["copy set tag",tag]);
+    chrome.runtime.sendMessage(["copy set tag",tag,pos.lastCopy]);
 }
 
 

@@ -1,6 +1,6 @@
 chrome.runtime.onInstalled.addListener((details)=>{ 
   if (details.reason === "install"){
-    const tags = ["default"];
+    const tags = ["默认"];
     const init = [{
         id: Date.now(),
         content: "",
@@ -9,23 +9,13 @@ chrome.runtime.onInstalled.addListener((details)=>{
     chrome.storage.local.set({clipData: init,tags,toggle: true,tip: true});
     return;
   }
-  console.log("更新完成");
 })
-
-chrome.storage.onChanged.addListener(function (changes, namespace) {
-  for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-    console.log("下面是存储的改变");
-    console.log(oldValue);
-    console.log(newValue);
-    console.log("上面是存储的改变")
-  }
-});
 
 chrome.runtime.onMessage.addListener(
   (request, sender, sendResponse)=> {
-    console.log(sender.tab ?
-                "from a content script:" + sender.tab.url :
-                "from the extension");
+    // console.log(sender.tab ?
+    //             "from a content script:" + sender.tab.url :
+    //             "from the extension");
     if (request[0] === "copy happened"){
       if(submitData(request[1]))sendResponse("copy success");
     }
@@ -44,12 +34,30 @@ chrome.runtime.onMessage.addListener(
       changeStorage(request[1]).then(()=>{sendResponse("a")});
     }
     else if (request[0] === "copy set tag"){
-      copySetTag(request[1]);
+      copySetTag(request[1],request[2]);
     }
     return true;
     
   } 
 );
+
+function getData(){
+  return new Promise((resovle,reject)=>{
+    chrome.storage.local.get(['clipData'],function(result){resovle(result.clipData)})
+  });
+} 
+function setData(storage){
+  return new Promise((resolve,reject)=>{
+    chrome.storage.local.set({clipData: storage}, ()=>{
+      if (chrome.runtime.lastError)reject(chrome.runtime.lastError);
+      resolve(true);
+      }
+    )
+  })
+}
+async function changeStorage(storage){
+  return await setData(storage);
+}
 
 async function submitData(newData){
   let storage = await getData();
@@ -70,18 +78,20 @@ async function editDataItem(oldData,newData){
   }
   else return false;
 }
+
 async function deleteTag(tag){
   let storage =await getData();
   storage = storage.map(element => {
     let temp = {...element};
     if(element.tag === tag){
-      temp.tag = 'default';
+      temp.tag = '默认';
       return temp;
     }
     return temp;  
   });
   return await setData(storage);  
 }
+
 async function manyChangeTag(ids,tag){
   let storage = await getData();
   storage = storage.map((element) =>{
@@ -94,46 +104,26 @@ async function manyChangeTag(ids,tag){
   });
   return await setData(storage);
 }
-async function changeStorage(storage){
-  return await setData(storage);
-}
-async function copySetTag(tag){
+
+async function copySetTag(tag,lastCopy){
   let storage = await getData();
-  storage[storage.length-1].tag = tag;
-  if(tag=="default")return;
-  setData(storage);
+  if(storage[storage.length-1].content == lastCopy){
+    storage[storage.length-1].tag = tag;
+    if(tag=="默认")return;
+    setData(storage);
+  } 
 }
 
-function getData(){
-  return new Promise((resovle,reject)=>{
-    chrome.storage.local.get(['clipData'],function(result){resovle(result.clipData)})
-  });
-} 
-function setData(storage){
-  return new Promise((resolve,reject)=>{
-    chrome.storage.local.set({clipData: storage}, ()=>{
-      if (chrome.runtime.lastError)reject(chrome.runtime.lastError);
-      resolve(true);
-      }
-    )
-  })
-}
 
-// const copy = "";
-// const lastCopy = "";
 
-// async function watchClipBoard(){
-//   copy.innerText = await navigator.clipboard.readText();
-//   if(copy!=lastCopy){
-//     console.log(copy);
-//     lastCopy = copy;
-//     storage = await getData();
-//     storage.push({id : Date.now(),content : copy,tag: "default"})
-//     setData(storage);
+
+//测试时使用
+// chrome.storage.onChanged.addListener(function (changes, namespace) {
+//   for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
+//     console.log("下面是存储的改变");
+//     console.log(oldValue);
+//     console.log(newValue);
+//     console.log("上面是存储的改变")
 //   }
-// };
-// const timer = setInterval(watchClipBoard,1000);
-
-
-
+// });
 
