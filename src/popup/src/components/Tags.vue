@@ -8,7 +8,7 @@
                 <span>{{tagToBe}}</span>
             </div>
             <div id="tagsShow">
-                <span :class="state" @click="tagBtn(tag)" v-for="(tag,index) of total" :key="index">{{tag}}</span>
+                <span :class="state" :title="tag" @click="tagBtn(tag)" v-for="(tag,index) of total" :key="index">{{tag}}</span>
             </div>
             <div id="control">
                 <i @click="addTag" class="iconfont icon-plus-square">增加</i>
@@ -50,7 +50,7 @@ export default {
             newTag=newTag.trim();
             if (this.total.indexOf(newTag)!==-1){alert("标签存在重名，请重新添加");return}
             else if (newTag==""){alert("标签不能为空，请重新输入");return}
-            else if (newTag.length>15){alert("标签长度过长，请重新输入")}
+            else if (newTag.length>15){alert("标签长度过长，请重新输入");return}
             this.$bus.$emit("addTag",newTag);
         },
         deleteTag(){
@@ -69,7 +69,8 @@ export default {
                 const check = confirm(`请确定是否要删除标签：${tag} 使用该标签的所有记录会被修改为默认标签`);
                 if(check !== true)return;
                 this.state = "normal";
-                this.$bus.$emit("deleteTag",tag)
+                this.$bus.$emit("deleteTag",tag);
+                if(this.tagToBe === tag)this.tagToBe='';
             }
         },
         confirm() {

@@ -39,7 +39,7 @@
                 <li v-for="(item,index) of showBoard" :key="item.id">
                     <span :ref = "item.id" @click="selectItem(item.id)" class="index" title="点击选中">{{index+1}}</span>
                     <span @click="selectItem(item.id)" class="content" :title="item.content">{{item.content}}</span>
-                    <span @click="showTagPage(item)" class="tag" title="点击修改标签">{{item.tag}}</span>
+                    <span @click="showTagPage(item)" class="tag" :title="'点击修改标签: '+item.tag">{{item.tag}}</span>
                     <span class="control">
                         <i title="复制" @click="copyItem(item)" class="iconfont icon-fuzhi"></i>
                         <i title="编辑" @click="editItem(item)" class="iconfont icon-bianji"></i>
@@ -48,6 +48,7 @@
                 </li>
             </ul>            
         </div>
+
         <div id="select">
             <span id="func">
                 <div>批量操作</div>
@@ -58,7 +59,9 @@
             <span class="btn" @click="selectAll">全选</span>
             <span class="btn" @click="removeAll">解除</span>
         </div>
+
         <button v-if="debug_mode" @click="debug">debug</button>
+        
         <tags v-if="tagEditPage" :total="clipTags" :item="itemForTagPage"></tags>
     </div>
 </template>
@@ -534,20 +537,3 @@ export default{
         }
     }
 </style>
-
-
-let time = document.querySelectorAll("div.duration");
-time = Array.from(time);
-let all2 = time.reduce((pre,ele,index)=>{
-    if(index==199){return pre+91};
-    return pre+Number(ele.innerText.slice(0,2))
-    },0)
-function test(n){     
-    let a = time.reduce((pre,ele,index)=>{
-        if(index>=n){return pre};
-        return pre+Number(ele.innerText.slice(0,2));
-        },0)
-    console.log(a);
-    console.log(a/all2);
-    }
-

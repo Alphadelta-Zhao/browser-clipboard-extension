@@ -113,17 +113,3 @@ async function copySetTag(tag,lastCopy){
     setData(storage);
   } 
 }
-
-
-
-
-//测试时使用
-// chrome.storage.onChanged.addListener(function (changes, namespace) {
-//   for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-//     console.log("下面是存储的改变");
-//     console.log(oldValue);
-//     console.log(newValue);
-//     console.log("上面是存储的改变")
-//   }
-// });
-
