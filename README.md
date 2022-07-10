@@ -10,4 +10,4 @@
 
 ## 插件链接
 Edge插件地址 ： https://microsoftedge.microsoft.com/addons/detail/剪切板/fgnolmppfnimbhefeipiileglcaedjjm
-Chrome插件地址：https://chrome.google.com/webstore/detail/clipboard/habdiilfdjamjnplmngpkpeadkklaedn/related?hl=zh-CN&authuser=0
+Chrome插件地址：https://chrome.google.com/webstore/detail/%E5%89%AA%E5%88%87%E6%9D%BF/habdiilfdjamjnplmngpkpeadkklaedn
